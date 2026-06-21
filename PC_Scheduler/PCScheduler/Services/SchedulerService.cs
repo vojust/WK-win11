@@ -113,7 +113,7 @@ public class SchedulerService
             var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
             foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                var parts = line.Trim().Split('","');
+                var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
                 if (parts.Length < 2) continue;
                 var tn = parts[0].Trim('"').Trim();
                 if (tn.StartsWith(Prefix) && !active.Contains(tn))
