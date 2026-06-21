@@ -1,6 +1,5 @@
 bin/
 obj/
-publish/
 .DS_Store
 Thumbs.db
 *.user
