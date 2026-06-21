@@ -1,5 +1,7 @@
-bin/
-obj/
+__pycache__/
+*.pyc
+dist/
+build/
+*.spec
 .DS_Store
 Thumbs.db
-*.user
