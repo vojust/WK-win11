@@ -64,31 +64,33 @@ class TaskSchedulerService:
             ["schtasks.exe"] + args,
             capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW
         )
-        if proc.returncode != 0 and "ERROR" in proc.stderr:
-            raise Exception(proc.stderr.strip())
-        return proc.stdout
+        if proc.returncode != 0:
+            err = (proc.stderr or "").strip()
+            raise Exception(err or f"schtasks.exe завершился с кодом {proc.returncode}")
+        return proc.stdout or ""
 
     @staticmethod
     def create_or_update(entry: ScheduleEntry):
         TaskSchedulerService.delete(entry)
         task_name = f"{TASK_PREFIX}{entry.id}"
-        hours, mins = entry.time.split(":")
-        days_flag = ""
-        if entry.repeat == "weekdays":
-            days_flag = " /d MON,TUE,WED,THU,FRI"
-        elif entry.repeat == "weekly" and entry.days:
-            days_flag = " /d " + ",".join(entry.days)
 
+        args = ["/create", "/tn", task_name, "/sc", "daily", "/st", entry.time, "/f"]
         if entry.type == "wake":
-            cmd = f'/create /tn "{task_name}" /tr "exit" /sc daily /st {entry.time}{days_flag} /f /WAKE'
+            args += ["/tr", "exit", "/WAKE"]
         else:
-            cmd = f'/create /tn "{task_name}" /tr "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" /sc daily /st {entry.time}{days_flag} /f'
-        TaskSchedulerService._run(cmd.split())
+            args += ["/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"]
+
+        if entry.repeat == "weekdays":
+            args += ["/d", "MON,TUE,WED,THU,FRI"]
+        elif entry.repeat == "weekly" and entry.days:
+            args += ["/d", ",".join(entry.days)]
+
+        TaskSchedulerService._run(args)
 
     @staticmethod
     def delete(entry: ScheduleEntry):
         task_name = f"{TASK_PREFIX}{entry.id}"
-        TaskSchedulerService._run(f'/delete /tn "{task_name}" /f'.split())
+        TaskSchedulerService._run(["/delete", "/tn", task_name, "/f"])
 
     @staticmethod
     def apply_all(entries: List[ScheduleEntry]):
@@ -102,23 +104,35 @@ class TaskSchedulerService:
     @staticmethod
     def cleanup(entries: List[ScheduleEntry]):
         active_ids = {f"{TASK_PREFIX}{e.id}" for e in entries}
-        out = TaskSchedulerService._run(["/query", "/fo", "csv", "/nh"])
+        try:
+            out = TaskSchedulerService._run(["/query", "/fo", "csv", "/nh"])
+        except Exception:
+            return
         for line in out.strip().split("\n"):
-            parts = line.strip('"').split('","')
-            if parts:
-                tn = parts[0].strip('"').strip()
-                if tn.startswith(TASK_PREFIX) and tn not in active_ids:
-                    TaskSchedulerService._run(f'/delete /tn "{tn}" /f'.split())
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split('","')
+            if len(parts) < 2:
+                continue
+            tn = parts[0].strip('"').strip()
+            if tn.startswith(TASK_PREFIX) and tn not in active_ids:
+                try:
+                    TaskSchedulerService._run(["/delete", "/tn", tn, "/f"])
+                except Exception:
+                    pass
 
 # ── Config ────────────────────────────────────────────────────────────
 
-CONFIG_DIR = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "PCScheduler")
-CONFIG_PATH = os.path.join(CONFIG_DIR, "schedules.json")
+def _config_path() -> str:
+    base = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+    return os.path.join(base, "PCScheduler", "schedules.json")
 
 def load_schedules() -> List[ScheduleEntry]:
     try:
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        path = _config_path()
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return [ScheduleEntry(**d) for d in data]
     except Exception as e:
@@ -126,8 +140,9 @@ def load_schedules() -> List[ScheduleEntry]:
     return []
 
 def save_schedules(entries: List[ScheduleEntry]):
-    os.makedirs(CONFIG_DIR, exist_ok=True)
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+    path = _config_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
         json.dump([asdict(e) for e in entries], f, ensure_ascii=False, indent=2)
 
 # ── GUI ───────────────────────────────────────────────────────────────

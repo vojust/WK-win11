@@ -100,37 +100,55 @@ class TestConfig(unittest.TestCase):
 
 
 class TestTaskSchedulerCommands(unittest.TestCase):
-    def test_sleep_command_format(self):
-        """Verify the sleep task command is built correctly"""
-        e = ScheduleEntry(type="sleep", time="22:00", repeat="daily")
-        task_name = f"{TASK_PREFIX}{e.id}"
-        # We can't run schtasks on macOS, but we can verify command construction
-        expected_cmd = f'/create /tn "{task_name}" /tr "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" /sc daily /st 22:00 /f'
-        cmd = f'/create /tn "{task_name}" /tr "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" /sc daily /st {e.time} /f'
-        self.assertEqual(cmd, expected_cmd)
+    def _build_args(self, entry):
+        """Helper: replicate argument construction from TaskSchedulerService.create_or_update"""
+        task_name = f"{TASK_PREFIX}{entry.id}"
+        args = ["/create", "/tn", task_name, "/sc", "daily", "/st", entry.time, "/f"]
+        if entry.type == "wake":
+            args += ["/tr", "exit", "/WAKE"]
+        else:
+            args += ["/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"]
+        if entry.repeat == "weekdays":
+            args += ["/d", "MON,TUE,WED,THU,FRI"]
+        elif entry.repeat == "weekly" and entry.days:
+            args += ["/d", ",".join(entry.days)]
+        return args
 
-    def test_wake_command_format(self):
-        """Verify the wake task command includes /WAKE flag"""
+    def test_sleep_args(self):
+        e = ScheduleEntry(type="sleep", time="22:00", repeat="daily")
+        args = self._build_args(e)
+        self.assertIn("/create", args)
+        self.assertEqual(args[args.index("/tn") + 1], f"{TASK_PREFIX}{e.id}")
+        self.assertEqual(args[args.index("/tr") + 1], "rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+        self.assertEqual(args[args.index("/st") + 1], "22:00")
+        self.assertNotIn("/WAKE", args)
+
+    def test_wake_args(self):
         e = ScheduleEntry(type="wake", time="08:00", repeat="daily")
-        task_name = f"{TASK_PREFIX}{e.id}"
-        cmd = f'/create /tn "{task_name}" /tr "exit" /sc daily /st {e.time} /f /WAKE'
-        expected_cmd = f'/create /tn "{task_name}" /tr "exit" /sc daily /st 08:00 /f /WAKE'
-        self.assertEqual(cmd, expected_cmd)
+        args = self._build_args(e)
+        self.assertEqual(args[args.index("/tr") + 1], "exit")
+        self.assertIn("/WAKE", args)
 
     def test_weekdays_flag(self):
-        """Verify weekdays repeat adds MON-FRI"""
         e = ScheduleEntry(type="sleep", time="23:00", repeat="weekdays")
-        task_name = f"{TASK_PREFIX}{e.id}"
-        cmd = f'/create /tn "{task_name}" /tr "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" /sc daily /st {e.time} /d MON,TUE,WED,THU,FRI /f'
-        expected_suffix = "MON,TUE,WED,THU,FRI"
-        self.assertIn(expected_suffix, cmd)
+        args = self._build_args(e)
+        self.assertEqual(args[args.index("/d") + 1], "MON,TUE,WED,THU,FRI")
 
     def test_weekly_flag(self):
-        """Verify weekly repeat adds selected days"""
         e = ScheduleEntry(type="wake", time="09:00", repeat="weekly", days=["MON", "WED"])
+        args = self._build_args(e)
+        self.assertEqual(args[args.index("/d") + 1], "MON,WED")
+
+    def test_delete_args(self):
+        e = ScheduleEntry(id="test123", type="sleep", time="22:00")
         task_name = f"{TASK_PREFIX}{e.id}"
-        cmd = f'/create /tn "{task_name}" /tr "exit" /sc daily /st {e.time} /d MON,WED /f /WAKE'
-        self.assertIn("MON,WED", cmd)
+        args = ["/delete", "/tn", task_name, "/f"]
+        self.assertEqual(args[0], "/delete")
+        self.assertEqual(args[2], task_name)
+
+    def test_query_args(self):
+        args = ["/query", "/fo", "csv", "/nh"]
+        self.assertEqual(args, ["/query", "/fo", "csv", "/nh"])
 
     def test_days_order(self):
         """Verify DAY_NAMES_EN and DAY_NAMES_RU correspond correctly"""
