@@ -31,7 +31,7 @@ jobs:
       - name: Create Release
         shell: pwsh
         run: |
-          $tag = "v$(Get-Date -Format 'yyyy.Mdd.HHmmss')"
+          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
           gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
