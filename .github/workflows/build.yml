@@ -47,7 +47,10 @@ jobs:
       - name: Create Release (public)
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: pwsh
+        shell: bash
         run: |
-          $tag = "build-" + $env:GITHUB_SHA.Substring(0, 8)
-          gh release create $tag dist/PC_Scheduler.exe --title "PC Scheduler build $tag" --notes "Автоматическая сборка после пуша" --latest
+          TAG="build-${GITHUB_SHA:0:8}"
+          gh release create "$TAG" dist/PC_Scheduler.exe \
+            --title "PC Scheduler (build $TAG)" \
+            --notes "Автоматическая сборка после пуша в main" \
+            --latest
