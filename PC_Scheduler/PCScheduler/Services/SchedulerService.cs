@@ -61,7 +61,7 @@ public class SchedulerService
     public static void CreateOrUpdate(ScheduleEntry entry)
     {
         var name = $"{Prefix}{entry.Id}";
-        Delete(name);
+        try { Delete(name); } catch { }
 
         var args = new List<string> { "/create", "/tn", name };
 
