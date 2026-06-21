@@ -29,10 +29,9 @@ jobs:
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 
       - name: Create Release
+        shell: pwsh
         run: |
-          gh release create "v${{ github.run_number }}.${{ github.run_attempt }}" `
-            publish/PCScheduler.exe `
-            --title "PCScheduler v${{ github.run_number }}.${{ github.run_attempt }}" `
-            --notes "Автоматическая сборка от $(date -u '+%Y-%m-%d %H:%M UTC')"
+          $tag = "v$(Get-Date -Format 'yyyy.Mdd.HHmmss')"
+          gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
