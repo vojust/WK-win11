@@ -1,0 +1,40 @@
+<Window x:Class="PCScheduler.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:PCScheduler"
+        Title="Планировщик включения/выключения ПК"
+        Width="650"
+        Height="480"
+        MinWidth="500"
+        MinHeight="350"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" FontSize="18" FontWeight="SemiBold" Margin="4,8" Text="Управление расписанием" />
+
+        <DataGrid Grid.Row="1" x:Name="ScheduleGrid"
+                  ItemsSource="{Binding}"
+                  SelectionChanged="ScheduleGrid_SelectionChanged"
+                  FontSize="13">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="120" />
+                <DataGridTextColumn Header="Время" Binding="{Binding TimeDisplay}" Width="80" />
+                <DataGridTextColumn Header="Повтор" Binding="{Binding RepeatDisplay}" Width="120" />
+                <DataGridTextColumn Header="Статус" Binding="{Binding StatusGlyph}" Width="60" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="4,8">
+            <Button x:Name="AddBtn" Content="+ Добавить" Click="AddBtn_Click" Width="120" />
+            <Button x:Name="EditBtn" Content="✏ Изменить" Click="EditBtn_Click" Width="120" IsEnabled="False" />
+            <Button x:Name="EnableBtn" Content="Вкл/Выкл" Click="ToggleBtn_Click" Width="100" IsEnabled="False" />
+            <Button x:Name="DeleteBtn" Content="✖ Удалить" Click="DeleteBtn_Click" Width="100" IsEnabled="False" />
+            <Button x:Name="ApplyBtn" Content="Применить" Click="ApplyBtn_Click" Width="120" FontWeight="Bold" />
+        </StackPanel>
+    </Grid>
+</Window>
