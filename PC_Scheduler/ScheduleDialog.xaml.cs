@@ -75,12 +75,10 @@ public partial class ScheduleDialog : Window
         };
 
         DialogResult = true;
-        Close();
     }
 
     private void CancelBtn_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
-        Close();
     }
 }
