@@ -1,0 +1,53 @@
+<Window x:Class="PCScheduler.ScheduleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Расписание" Width="400" Height="320"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Content="Тип:" />
+        <ComboBox Grid.Row="0" x:Name="TypeCombo" Margin="0,0,0,8" HorizontalAlignment="Right" Width="280"
+                  SelectedIndex="0">
+            <ComboBoxItem Content="Выключение (сон)" />
+            <ComboBoxItem Content="Включение (пробуждение из сна)" />
+        </ComboBox>
+
+        <Label Grid.Row="1" Content="Время:" />
+        <TextBox Grid.Row="1" x:Name="TimeBox" Margin="0,0,0,8" HorizontalAlignment="Right" Width="280"
+                 Text="08:00" />
+
+        <Label Grid.Row="2" Content="Повторение:" />
+        <ComboBox Grid.Row="2" x:Name="RepeatCombo" Margin="0,0,0,8" HorizontalAlignment="Right" Width="280"
+                  SelectionChanged="OnRepeatChanged">
+            <ComboBoxItem Content="Ежедневно" />
+            <ComboBoxItem Content="По будням" />
+            <ComboBoxItem Content="Еженедельно" />
+            <ComboBoxItem Content="Один раз" />
+        </ComboBox>
+
+        <GroupBox Grid.Row="3" Header="Дни недели" x:Name="DaysGroup" Visibility="Hidden" Margin="0,0,0,8">
+            <WrapPanel Margin="4">
+                <CheckBox x:Name="MonCb" Content="Пн" Margin="4" />
+                <CheckBox x:Name="TueCb" Content="Вт" Margin="4" />
+                <CheckBox x:Name="WedCb" Content="Ср" Margin="4" />
+                <CheckBox x:Name="ThuCb" Content="Чт" Margin="4" />
+                <CheckBox x:Name="FriCb" Content="Пт" Margin="4" />
+                <CheckBox x:Name="SatCb" Content="Сб" Margin="4" />
+                <CheckBox x:Name="SunCb" Content="Вс" Margin="4" />
+            </WrapPanel>
+        </GroupBox>
+
+        <Button Grid.Row="7" Content="Сохранить" Click="OnSave" IsDefault="True" Height="30" Width="120"
+                HorizontalAlignment="Right" Margin="0,8,0,0" />
+    </Grid>
+</Window>

@@ -5,3 +5,12 @@ build/
 *.spec
 .DS_Store
 Thumbs.db
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.DotSettings*
+.vs/
+*.nupkg

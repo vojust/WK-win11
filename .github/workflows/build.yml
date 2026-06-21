@@ -1,54 +1,38 @@
-name: Build Windows exe
+name: build
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
   test:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-dotnet@v4
         with:
-          python-version: "3.12"
-
-      - name: Run tests
-        run: python -m unittest tests.test_main -v
+          dotnet-version: "8.0"
+      - run: dotnet test PC_Scheduler/PCScheduler.Tests --configuration Release --logger trx
 
   build:
-    runs-on: windows-latest
     needs: test
-
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-dotnet@v4
         with:
-          python-version: "3.12"
+          dotnet-version: "8.0"
 
-      - name: Install dependencies
-        run: pip install -r PC_Scheduler/requirements.txt
-
-      - name: Build exe
-        run: pyinstaller --onefile --windowed --name "PC_Scheduler" PC_Scheduler/main.py
-
-      - name: Upload exe as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: PC_Scheduler
-          path: dist/PC_Scheduler.exe
-
-      - name: Upload to public download link
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Publish single-file exe
         run: |
-          $tag = "v" + (Get-Date -Format "yyyy.Mdd.HHmmss")
-          gh release create $tag dist/PC_Scheduler.exe --title "PC Scheduler" --notes "build $env:GITHUB_SHA" 2>&1
-          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
+          dotnet publish PC_Scheduler/PCScheduler -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+
+      - name: Create Release
+        run: |
+          gh release create "v${{ github.run_number }}.${{ github.run_attempt }}" `
+            publish/PCScheduler.exe `
+            --title "PCScheduler v${{ github.run_number }}.${{ github.run_attempt }}" `
+            --notes "Автоматическая сборка от $(date -u '+%Y-%m-%d %H:%M UTC')"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
