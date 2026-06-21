@@ -102,12 +102,17 @@ class TestConfig(unittest.TestCase):
 class TestTaskSchedulerCommands(unittest.TestCase):
     def _build_args(self, entry):
         """Helper: replicate argument construction from TaskSchedulerService.create_or_update"""
+        from datetime import datetime
         task_name = f"{TASK_PREFIX}{entry.id}"
-        args = ["/create", "/tn", task_name, "/sc", "daily", "/st", entry.time, "/f"]
+        h, m = entry.time.split(":")
+        time_fmt = f"{int(h):02d}:{int(m):02d}"
         if entry.type == "wake":
-            args += ["/tr", "exit", "/WAKE"]
+            args = ["/create", "/tn", task_name, "/tr", "exit",
+                    "/sc", "daily", "/st", time_fmt, "/f", "/WAKE"]
         else:
-            args += ["/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"]
+            args = ["/create", "/tn", task_name,
+                    "/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+                    "/sc", "daily", "/st", time_fmt, "/f"]
         if entry.repeat == "weekdays":
             args += ["/d", "MON,TUE,WED,THU,FRI"]
         elif entry.repeat == "weekly" and entry.days:

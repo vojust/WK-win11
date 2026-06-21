@@ -60,25 +60,35 @@ TASK_PREFIX = "PCSched_"
 class TaskSchedulerService:
     @staticmethod
     def _run(args: List[str]) -> str:
+        full_cmd = "schtasks.exe " + " ".join(args)
         proc = subprocess.run(
             ["schtasks.exe"] + args,
             capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW
         )
         if proc.returncode != 0:
             err = (proc.stderr or "").strip()
-            raise Exception(err or f"schtasks.exe завершился с кодом {proc.returncode}")
+            msg = err or f"код {proc.returncode}"
+            raise Exception(f"[{full_cmd}] {msg}")
         return proc.stdout or ""
+
+    @staticmethod
+    def _fmt_time(t: str) -> str:
+        parts = t.split(":")
+        return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
 
     @staticmethod
     def create_or_update(entry: ScheduleEntry):
         TaskSchedulerService.delete(entry)
         task_name = f"{TASK_PREFIX}{entry.id}"
+        time_fmt = TaskSchedulerService._fmt_time(entry.time)
 
-        args = ["/create", "/tn", task_name, "/sc", "daily", "/st", entry.time, "/f"]
         if entry.type == "wake":
-            args += ["/tr", "exit", "/WAKE"]
+            args = ["/create", "/tn", task_name, "/tr", "exit",
+                    "/sc", "daily", "/st", time_fmt, "/f", "/WAKE"]
         else:
-            args += ["/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"]
+            args = ["/create", "/tn", task_name,
+                    "/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+                    "/sc", "daily", "/st", time_fmt, "/f"]
 
         if entry.repeat == "weekdays":
             args += ["/d", "MON,TUE,WED,THU,FRI"]
@@ -97,7 +107,8 @@ class TaskSchedulerService:
         if proc.returncode != 0:
             err = (proc.stderr or "").strip().lower()
             if not (ignore_not_found and ("не существует" in err or "does not exist" in err or "cannot find" in err)):
-                raise Exception(err or f"schtasks.exe завершился с кодом {proc.returncode}")
+                full = f"schtasks.exe /delete /tn {task_name} /f"
+                raise Exception(f"[{full}] {err or f'код {proc.returncode}'}")
 
     @staticmethod
     def apply_all(entries: List[ScheduleEntry]):
