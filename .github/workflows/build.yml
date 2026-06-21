@@ -45,12 +45,38 @@ jobs:
           path: dist/PC_Scheduler.exe
 
       - name: Create Release (public)
+        shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          TAG="build-${GITHUB_SHA:0:8}"
-          gh release create "$TAG" dist/PC_Scheduler.exe \
-            --title "PC Scheduler (build $TAG)" \
-            --notes "Автоматическая сборка после пуша в main" \
-            --latest
+          $tag = "build-$($env:GITHUB_SHA.Substring(0,8))"
+          Write-Output "Tag: $tag"
+
+          # Create release via API
+          $body = @{
+            tag_name = $tag
+            name = "PC Scheduler ($tag)"
+            body = "Автоматическая сборка"
+            prerelease = $false
+          } | ConvertTo-Json
+
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases" `
+            -Method Post `
+            -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } `
+            -ContentType "application/json" `
+            -Body $body
+
+          Write-Output "Release created: $($release.html_url)"
+
+          # Upload exe
+          $uploadUrl = $release.upload_url -replace "\{.*\}", "?name=PC_Scheduler.exe"
+          $exeBytes = [System.IO.File]::ReadAllBytes("dist\PC_Scheduler.exe")
+          Invoke-RestMethod -Uri $uploadUrl `
+            -Method Post `
+            -Headers @{
+              Authorization = "Bearer $env:GITHUB_TOKEN"
+              "Content-Type" = "application/octet-stream"
+            } `
+            -Body $exeBytes
+
+          Write-Output "Asset uploaded"
