@@ -44,10 +44,11 @@ jobs:
           name: PC_Scheduler
           path: dist/PC_Scheduler.exe
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.sha }}
-          name: PC Scheduler (build-${{ github.sha }})
-          body: Автоматическая сборка после пуша в main
-          files: dist/PC_Scheduler.exe
-          make_latest: true
+      - name: Upload to public download link
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v" + (Get-Date -Format "yyyy.Mdd.HHmmss")
+          gh release create $tag dist/PC_Scheduler.exe --title "PC Scheduler" --notes "build $env:GITHUB_SHA" 2>&1
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
