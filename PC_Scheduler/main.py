@@ -88,9 +88,16 @@ class TaskSchedulerService:
         TaskSchedulerService._run(args)
 
     @staticmethod
-    def delete(entry: ScheduleEntry):
+    def delete(entry: ScheduleEntry, ignore_not_found: bool = True):
         task_name = f"{TASK_PREFIX}{entry.id}"
-        TaskSchedulerService._run(["/delete", "/tn", task_name, "/f"])
+        proc = subprocess.run(
+            ["schtasks.exe", "/delete", "/tn", task_name, "/f"],
+            capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW
+        )
+        if proc.returncode != 0:
+            err = (proc.stderr or "").strip().lower()
+            if not (ignore_not_found and ("не существует" in err or "does not exist" in err or "cannot find" in err)):
+                raise Exception(err or f"schtasks.exe завершился с кодом {proc.returncode}")
 
     @staticmethod
     def apply_all(entries: List[ScheduleEntry]):
