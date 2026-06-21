@@ -109,6 +109,17 @@ public partial class MainWindow : Window
         }
     }
 
+    async void OnDeleteAll(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show("Удалить все задачи планировщика?", "Подтверждение",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        await Task.Run(() => SchedulerService.DeleteAll());
+        _entries.Clear();
+        Save();
+    }
+
     async void OnApply(object sender, RoutedEventArgs e)
     {
         ApplyBtn.IsEnabled = false;

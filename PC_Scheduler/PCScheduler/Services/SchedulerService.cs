@@ -125,4 +125,24 @@ public class SchedulerService
         }
         catch { }
     }
+
+    public static void DeleteAll()
+    {
+        try
+        {
+            var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
+            foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
+                if (parts.Length < 2) continue;
+                var tn = parts[0].Trim('"').Trim();
+                if (tn.StartsWith(Prefix))
+                {
+                    try { Run(new[] { "/delete", "/tn", tn, "/f" }); }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+    }
 }

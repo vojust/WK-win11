@@ -28,6 +28,7 @@
             <Button x:Name="EditBtn" Content="✏ Изменить" Click="OnEdit" Width="110" Margin="4" Padding="8,4" IsEnabled="False" />
             <Button x:Name="ToggleBtn" Content="Вкл/Выкл" Click="OnToggle" Width="90" Margin="4" Padding="8,4" IsEnabled="False" />
             <Button x:Name="DeleteBtn" Content="✖ Удалить" Click="OnDelete" Width="90" Margin="4" Padding="8,4" IsEnabled="False" />
+            <Button x:Name="DeleteAllBtn" Content="🗑 Всё" Click="OnDeleteAll" Width="80" Margin="4" Padding="8,4" />
             <Button x:Name="ApplyBtn" Content="Применить" Click="OnApply" Width="110" Margin="4" Padding="8,4" FontWeight="Bold" />
         </StackPanel>
     </Grid>
