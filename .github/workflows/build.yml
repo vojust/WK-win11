@@ -29,9 +29,11 @@ jobs:
           name: PC_Scheduler
           path: dist/PC_Scheduler.exe
 
-      - name: Create Release
+      - name: Create Release (manual trigger only)
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $version = "v" + (Get-Date -Format "yyyy.M.dd.HHmm")
-          gh release create $version dist/PC_Scheduler.exe --title "PC Scheduler $version" --notes "Автоматическая сборка"
+          $tag = "v" + (Get-Date -Format "yyyy.Mdd.HHmm")
+          gh release create $tag dist/PC_Scheduler.exe --title "PC Scheduler $tag" --notes "Ручная сборка"
