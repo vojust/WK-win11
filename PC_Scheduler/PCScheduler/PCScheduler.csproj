@@ -10,6 +10,8 @@
     <RootNamespace>PCScheduler</RootNamespace>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Version>1.0.0</Version>
+    <InformationalVersion Condition="'$(BUILD_VERSION)' != ''">$(BUILD_VERSION)</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PCScheduler.Core\PCScheduler.Core.csproj" />

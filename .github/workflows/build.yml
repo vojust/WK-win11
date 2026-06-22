@@ -34,9 +34,12 @@ jobs:
           dotnet-version: "8.0"
 
       - name: Publish single-file exe
+        shell: pwsh
         run: |
+          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
           dotnet publish PC_Scheduler/PCScheduler -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version="$tag" -p:BUILD_VERSION="$tag" -o publish
 
       - name: Create Release
         shell: pwsh
