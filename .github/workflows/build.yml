@@ -36,10 +36,11 @@ jobs:
       - name: Publish single-file exe
         shell: pwsh
         run: |
-          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
+          $ver = Get-Date -Format 'yy.Mdd.HHmm'
+          $tag = "v$ver"
           dotnet publish PC_Scheduler/PCScheduler -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:Version="$tag" -p:BUILD_VERSION="$tag" -o publish
+            -p:Version="$ver" -p:BUILD_VERSION="$tag" -o publish
 
       - name: Create Release
         shell: pwsh

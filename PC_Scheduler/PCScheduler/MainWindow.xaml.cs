@@ -16,8 +16,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        if (ver != null) Title += $" v{ver.Major}.{ver.Minor}.{ver.Build}";
+        var ver = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(ver)) Title += $" {ver}";
         _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "PCScheduler", "schedules.json");
