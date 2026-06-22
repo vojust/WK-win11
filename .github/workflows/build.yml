@@ -24,6 +24,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
@@ -41,11 +43,63 @@ jobs:
       - name: Create Release
         shell: pwsh
         run: |
+          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
           # delete all old releases
           gh release list --limit 50 --json tagName | ConvertFrom-Json | % {
             gh release delete $_.tagName --yes --cleanup-tag 2>$null
           }
-          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
           gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
+          echo $tag > publish/TAG
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate README
+        shell: pwsh
+        run: |
+          $tag = (Get-Content publish/TAG).Trim()
+          $date = (Get-Date).ToString('dd.MM.yyyy HH:mm')
+          $download = "https://github.com/vojust/WK-win11/releases/latest/download/PCScheduler.exe"
+
+          @"
+  # PCScheduler
+
+  <img src="https://img.shields.io/badge/version-$tag-blue?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/vojust/WK-win11/.github%2Fworkflows%2Fbuild.yml?branch=main&style=flat-square&label=build" alt="build"/>
+  <img src="https://img.shields.io/badge/updated-$date-lightgrey?style=flat-square" alt="updated"/>
+
+  Планировщик включения/выключения ПК по расписанию. C# WPF (.NET 8), интеграция с Task Scheduler.
+
+  ## Скачать
+
+  [📥 PCScheduler.exe]($download) (single-file, ~50 MB)
+
+  ## Возможности
+
+  - **Сон / Гибернация / Пробуждение** по расписанию
+  - **Предупреждение** за 5 минут до выключения (всплывающее окно)
+  - **Повтор**: ежедневно, по будням, еженедельно, один раз
+  - **Тест пробуждения** (создаёт задачу на +2 мин)
+  - **Тёмная тема**, современный интерфейс
+  - **Трей**: сворачивается в системный лоток
+  - **Лог**: история операций
+
+  ## Как это работает
+
+  - **Сон/гибернация** — через `schtasks.exe` + `rundll32.exe powrprof.dll,SetSuspendState`
+  - **Пробуждение** — через PowerShell `Register-ScheduledTask -WakeToRun`
+  - **Конфиг**: `%LOCALAPPDATA%\PCScheduler\schedules.json`
+  - **Кэш NuGet** в CI для быстрой сборки
+
+  ## Последний релиз
+
+  | Версия | Дата |
+  |---|---|
+  | $tag | $date |
+  "@ | Out-File -FilePath README.md -Encoding utf8
+
+      - name: Commit README
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add README.md
+          git commit -m "Update README [skip ci]" && git push || echo "No changes to commit"
