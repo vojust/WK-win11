@@ -7,6 +7,12 @@ public static class SchedulerService
 {
     const string Prefix = "PCSched_";
 
+    static readonly Dictionary<string, string> DayNames = new()
+    {
+        ["MON"] = "Monday", ["TUE"] = "Tuesday", ["WED"] = "Wednesday",
+        ["THU"] = "Thursday", ["FRI"] = "Friday", ["SAT"] = "Saturday", ["SUN"] = "Sunday",
+    };
+
     static Process StartSchtasks(string[] args)
     {
         var psi = new ProcessStartInfo("schtasks.exe")
@@ -24,7 +30,7 @@ public static class SchedulerService
         return proc;
     }
 
-    static string Run(string[] args)
+    static string RunSchtasks(string[] args)
     {
         var proc = StartSchtasks(args);
 
@@ -36,6 +42,30 @@ public static class SchedulerService
         }
 
         return (proc.StandardOutput?.ReadToEnd() ?? "").Trim();
+    }
+
+    static void RunPowerShell(string script)
+    {
+        var psi = new ProcessStartInfo("powershell.exe")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-Command");
+        psi.ArgumentList.Add(script);
+
+        var proc = Process.Start(psi);
+        if (proc == null) throw new Exception("Не удалось запустить PowerShell");
+        proc.WaitForExit();
+
+        if (proc.ExitCode != 0)
+        {
+            var err = (proc.StandardError?.ReadToEnd() ?? "").Trim();
+            throw new Exception($"PowerShell: {err}");
+        }
     }
 
     public static void Delete(string taskName)
@@ -55,18 +85,24 @@ public static class SchedulerService
         var name = $"{Prefix}{entry.Id}";
         try { Delete(name); } catch { }
 
-        var args = new List<string> { "/create", "/tn", name };
-        var isWake = entry.Type == ScheduleType.Wake;
-
-        if (isWake)
+        if (entry.Type == ScheduleType.Wake)
         {
-            args.Add("/tr"); args.Add("exit");
+            CreateWakeViaPowerShell(name, entry);
         }
         else
         {
-            var flag = entry.Type == ScheduleType.Hibernate ? "1" : "0";
-            args.Add("/tr"); args.Add($"rundll32.exe powrprof.dll,SetSuspendState {flag},1,0");
+            CreateSleepViaSchtasks(name, entry);
         }
+    }
+
+    static void CreateSleepViaSchtasks(string name, ScheduleEntry entry)
+    {
+        var flag = entry.Type == ScheduleType.Hibernate ? "1" : "0";
+        var args = new List<string>
+        {
+            "/create", "/tn", name,
+            "/tr", $"rundll32.exe powrprof.dll,SetSuspendState {flag},1,0",
+        };
 
         if (entry.Repeat == RepeatType.Once)
         {
@@ -75,43 +111,48 @@ public static class SchedulerService
             args.Add("/st"); args.Add(entry.TimeFormatted);
             args.Add("/sd"); args.Add(today);
         }
-        else if (isWake && entry.Repeat == RepeatType.Weekdays)
-        {
-            args.Add("/sc"); args.Add("weekly");
-            args.Add("/st"); args.Add(entry.TimeFormatted);
-            args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
-        }
-        else if (isWake && entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
-        {
-            args.Add("/sc"); args.Add("weekly");
-            args.Add("/st"); args.Add(entry.TimeFormatted);
-            args.Add("/d"); args.Add(string.Join(",", entry.Days));
-        }
-        else if (isWake)
-        {
-            args.Add("/sc"); args.Add("weekly");
-            args.Add("/st"); args.Add(entry.TimeFormatted);
-            args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI,SAT,SUN");
-        }
         else
         {
             args.Add("/sc"); args.Add("daily");
             args.Add("/st"); args.Add(entry.TimeFormatted);
             if (entry.Repeat == RepeatType.Weekdays)
-            {
                 args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
-            }
             else if (entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
-            {
                 args.Add("/d"); args.Add(string.Join(",", entry.Days));
-            }
         }
 
         args.Add("/f");
+        RunSchtasks(args.ToArray());
+    }
 
-        if (isWake) args.Add("/WAKE");
+    static void CreateWakeViaPowerShell(string name, ScheduleEntry entry)
+    {
+        var time = entry.TimeFormatted;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("$action = New-ScheduledTaskAction -Execute 'exit'");
 
-        Run(args.ToArray());
+        if (entry.Repeat == RepeatType.Once)
+        {
+            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Once -At \"{time}\"");
+        }
+        else if (entry.Repeat == RepeatType.Weekdays)
+        {
+            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek \"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\" -At \"{time}\"");
+        }
+        else if (entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
+        {
+            var days = string.Join(",", entry.Days.Select(d => $"\"{DayNames.GetValueOrDefault(d, d)}\""));
+            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek {days} -At \"{time}\"");
+        }
+        else
+        {
+            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Daily -At \"{time}\"");
+        }
+
+        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun");
+        sb.AppendLine($"Register-ScheduledTask -TaskName \"{name}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+
+        RunPowerShell(sb.ToString());
     }
 
     public static void Remove(ScheduleEntry entry) => Delete($"{Prefix}{entry.Id}");
@@ -137,7 +178,7 @@ public static class SchedulerService
             {
                 if (tn.StartsWith(Prefix) && !active.Contains(tn))
                 {
-                    try { Run(new[] { "/delete", "/tn", tn, "/f" }); }
+                    try { RunSchtasks(new[] { "/delete", "/tn", tn, "/f" }); }
                     catch { }
                 }
             }
@@ -154,7 +195,7 @@ public static class SchedulerService
             {
                 if (tn.StartsWith(Prefix))
                 {
-                    try { Run(new[] { "/delete", "/tn", tn, "/f" }); }
+                    try { RunSchtasks(new[] { "/delete", "/tn", tn, "/f" }); }
                     catch { }
                 }
             }
@@ -165,7 +206,7 @@ public static class SchedulerService
     static List<string> QueryRawTasks()
     {
         var result = new List<string>();
-        var csv = Run(new[] { "/query", "/fo", "csv", "/nh" });
+        var csv = RunSchtasks(new[] { "/query", "/fo", "csv", "/nh" });
         if (string.IsNullOrWhiteSpace(csv)) return result;
 
         foreach (var line in csv.Split('\n', StringSplitOptions.RemoveEmptyEntries))
@@ -196,14 +237,13 @@ public static class SchedulerService
         var time = DateTime.Now.AddMinutes(2);
         var tag = $"{Prefix}test_{time:HHmm}";
         Delete(tag);
-        Run(new[]
-        {
-            "/create", "/tn", tag,
-            "/tr", "exit",
-            "/sc", "once",
-            "/st", $"{time:HH:mm}",
-            "/sd", $"{time:yyyy/MM/dd}",
-            "/f", "/WAKE"
-        });
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("$action = New-ScheduledTaskAction -Execute 'exit'");
+        sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Once -At \"{time:HH:mm}\" -RepetitionDuration ([TimeSpan]::Zero)");
+        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun");
+        sb.AppendLine($"Register-ScheduledTask -TaskName \"{tag}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+
+        RunPowerShell(sb.ToString());
     }
 }
