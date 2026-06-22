@@ -116,9 +116,13 @@ public static class SchedulerService
             args.Add("/sc"); args.Add("daily");
             args.Add("/st"); args.Add(entry.TimeFormatted);
             if (entry.Repeat == RepeatType.Weekdays)
+            {
                 args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
+            }
             else if (entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
+            {
                 args.Add("/d"); args.Add(string.Join(",", entry.Days));
+            }
         }
 
         args.Add("/f");
