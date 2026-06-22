@@ -33,7 +33,7 @@ public class ScheduleEntry
         _ => ""
     };
     [JsonIgnore] public string StatusDisplay => Enabled ? "✓" : "✗";
-    [JsonIgnore] public string WarnDisplay => Type != ScheduleType.Wake && WarnBeforeSleep ? "⚠ 5 мин" : "";
+        [JsonIgnore] public string WarnDisplay => Type != ScheduleType.Wake && WarnBeforeSleep ? "⚠ 5 минут" : "";
 
     private static string DayNameRu(string en) => en switch
     {
