@@ -6,12 +6,23 @@ namespace PCScheduler.Services;
 public static class SchedulerService
 {
     const string Prefix = "PCSched_";
+    const string WarnSuffix = "_warn";
 
     static readonly Dictionary<string, string> DayNames = new()
     {
         ["MON"] = "Monday", ["TUE"] = "Tuesday", ["WED"] = "Wednesday",
         ["THU"] = "Thursday", ["FRI"] = "Friday", ["SAT"] = "Saturday", ["SUN"] = "Sunday",
     };
+
+    static string WarnName(string id) => $"{Prefix}{id}{WarnSuffix}";
+
+    static string WarnTime(string time)
+    {
+        var p = time.Split(':');
+        var total = int.Parse(p[0]) * 60 + int.Parse(p[1]) - 5;
+        if (total < 0) total += 1440;
+        return $"{total / 60:D2}:{total % 60:D2}";
+    }
 
     static Process StartSchtasks(string[] args)
     {
@@ -84,6 +95,7 @@ public static class SchedulerService
     {
         var name = $"{Prefix}{entry.Id}";
         try { Delete(name); } catch { }
+        try { Delete(WarnName(entry.Id)); } catch { }
 
         if (entry.Type == ScheduleType.Wake)
         {
@@ -92,6 +104,11 @@ public static class SchedulerService
         else
         {
             CreateSleepViaSchtasks(name, entry);
+            if (entry.WarnBeforeSleep)
+            {
+                try { CreateWarnTask(entry); }
+                catch { }
+            }
         }
     }
 
@@ -115,6 +132,43 @@ public static class SchedulerService
         {
             args.Add("/sc"); args.Add("daily");
             args.Add("/st"); args.Add(entry.TimeFormatted);
+            if (entry.Repeat == RepeatType.Weekdays)
+            {
+                args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
+            }
+            else if (entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
+            {
+                args.Add("/d"); args.Add(string.Join(",", entry.Days));
+            }
+        }
+
+        args.Add("/f");
+        RunSchtasks(args.ToArray());
+    }
+
+    static void CreateWarnTask(ScheduleEntry entry)
+    {
+        var name = WarnName(entry.Id);
+        var warnTime = WarnTime(entry.TimeFormatted);
+        var msg = "Компьютер будет выключен через 5 минут";
+        var taskRun = $"powershell.exe -NoProfile -Command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('{msg}','PCScheduler')\"";
+        var args = new List<string>
+        {
+            "/create", "/tn", name,
+            "/tr", taskRun,
+        };
+
+        if (entry.Repeat == RepeatType.Once)
+        {
+            var today = DateTime.Now.ToString("yyyy/MM/dd");
+            args.Add("/sc"); args.Add("once");
+            args.Add("/st"); args.Add(warnTime);
+            args.Add("/sd"); args.Add(today);
+        }
+        else
+        {
+            args.Add("/sc"); args.Add("daily");
+            args.Add("/st"); args.Add(warnTime);
             if (entry.Repeat == RepeatType.Weekdays)
             {
                 args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
@@ -159,7 +213,11 @@ public static class SchedulerService
         RunPowerShell(sb.ToString());
     }
 
-    public static void Remove(ScheduleEntry entry) => Delete($"{Prefix}{entry.Id}");
+    public static void Remove(ScheduleEntry entry)
+    {
+        Delete($"{Prefix}{entry.Id}");
+        try { Delete(WarnName(entry.Id)); } catch { }
+    }
 
     public static void ApplyAll(List<ScheduleEntry> entries)
     {
@@ -173,7 +231,12 @@ public static class SchedulerService
 
     public static void Cleanup(List<ScheduleEntry> entries)
     {
-        var active = new HashSet<string>(entries.Select(e => $"{Prefix}{e.Id}"));
+        var active = new HashSet<string>();
+        foreach (var e in entries)
+        {
+            active.Add($"{Prefix}{e.Id}");
+            active.Add(WarnName(e.Id));
+        }
 
         try
         {

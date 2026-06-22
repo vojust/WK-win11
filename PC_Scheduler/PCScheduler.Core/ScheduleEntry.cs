@@ -14,6 +14,7 @@ public class ScheduleEntry
     public string Time { get; set; } = "08:00";
     public RepeatType Repeat { get; set; } = RepeatType.Daily;
     public bool Enabled { get; set; } = true;
+    public bool WarnBeforeSleep { get; set; }
     public List<string> Days { get; set; } = new();
 
     [JsonIgnore] public string TypeDisplay => Type switch
@@ -32,6 +33,7 @@ public class ScheduleEntry
         _ => ""
     };
     [JsonIgnore] public string StatusDisplay => Enabled ? "✓" : "✗";
+    [JsonIgnore] public string WarnDisplay => Type != ScheduleType.Wake && WarnBeforeSleep ? "⚠ 5 мин" : "";
 
     private static string DayNameRu(string en) => en switch
     {

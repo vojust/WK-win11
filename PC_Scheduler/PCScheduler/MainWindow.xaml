@@ -22,7 +22,8 @@
                 <DataGridTextColumn Header="Тип" Binding="{Binding TypeDisplay}" Width="120" />
                 <DataGridTextColumn Header="Время" Binding="{Binding TimeFormatted}" Width="80" />
                 <DataGridTextColumn Header="Повтор" Binding="{Binding RepeatDisplay}" Width="*" />
-                <DataGridTextColumn Header="Статус" Binding="{Binding StatusDisplay}" Width="60" />
+                <DataGridTextColumn Header="Статус" Binding="{Binding StatusDisplay}" Width="50" />
+                <DataGridTextColumn Header="Предупреждение" Binding="{Binding WarnDisplay}" Width="100" />
             </DataGrid.Columns>
         </DataGrid>
 

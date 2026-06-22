@@ -150,4 +150,42 @@ public class ModelTests
         var e = new ScheduleEntry { Repeat = RepeatType.Daily };
         Assert.Empty(e.Days);
     }
+
+    [Fact]
+    public void WarnDisplay_EmptyForWake()
+    {
+        var e = new ScheduleEntry { Type = ScheduleType.Wake, WarnBeforeSleep = true };
+        Assert.Equal("", e.WarnDisplay);
+    }
+
+    [Fact]
+    public void WarnDisplay_ShowsForSleep()
+    {
+        var e = new ScheduleEntry { Type = ScheduleType.Sleep, WarnBeforeSleep = true };
+        Assert.Contains("5 мин", e.WarnDisplay);
+    }
+
+    [Fact]
+    public void WarnDisplay_EmptyWhenDisabled()
+    {
+        var e = new ScheduleEntry { Type = ScheduleType.Sleep, WarnBeforeSleep = false };
+        Assert.Equal("", e.WarnDisplay);
+    }
+
+    [Fact]
+    public void WarnBeforeSleep_DefaultIsFalse()
+    {
+        var e = new ScheduleEntry();
+        Assert.False(e.WarnBeforeSleep);
+    }
+
+    [Fact]
+    public void WarnBeforeSleep_RoundTrip()
+    {
+        var entry = new ScheduleEntry { WarnBeforeSleep = true };
+        var json = System.Text.Json.JsonSerializer.Serialize(entry);
+        var back = System.Text.Json.JsonSerializer.Deserialize<ScheduleEntry>(json);
+        Assert.NotNull(back);
+        Assert.True(back!.WarnBeforeSleep);
+    }
 }

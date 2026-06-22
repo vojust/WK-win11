@@ -9,7 +9,7 @@ public partial class ScheduleDialog : Window
 
     static readonly ScheduleType[] TypeMap = { ScheduleType.Sleep, ScheduleType.Hibernate, ScheduleType.Wake };
     static readonly string[] Hours = Enumerable.Range(0, 24).Select(i => $"{i:D2}").ToArray();
-    static readonly string[] Minutes = Enumerable.Range(0, 60).Select(i => $"{i:D2}").ToArray();
+    static readonly string[] Minutes = Enumerable.Range(0, 12).Select(i => $"{(i * 5):D2}").ToArray();
 
     public ScheduleDialog(Window owner, ScheduleEntry? entry = null)
     {
@@ -18,6 +18,9 @@ public partial class ScheduleDialog : Window
 
         HourCombo.ItemsSource = Hours;
         MinCombo.ItemsSource = Minutes;
+
+        TypeCombo.SelectionChanged += (_, _) => UpdateWarnVisibility();
+        WarnCb.Visibility = Visibility.Collapsed;
 
         if (entry != null)
         {
@@ -29,6 +32,7 @@ public partial class ScheduleDialog : Window
             MinCombo.Text = parts[1];
 
             RepeatCombo.SelectedIndex = (int)entry.Repeat;
+            WarnCb.IsChecked = entry.WarnBeforeSleep;
             MonCb.IsChecked = entry.Days.Contains("MON");
             TueCb.IsChecked = entry.Days.Contains("TUE");
             WedCb.IsChecked = entry.Days.Contains("WED");
@@ -38,6 +42,11 @@ public partial class ScheduleDialog : Window
             SunCb.IsChecked = entry.Days.Contains("SUN");
             CheckDaysVisibility((int)entry.Repeat);
         }
+    }
+
+    void UpdateWarnVisibility()
+    {
+        WarnCb.Visibility = TypeCombo.SelectedIndex < 2 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void CheckDaysVisibility(int idx)
@@ -84,14 +93,17 @@ public partial class ScheduleDialog : Window
             return;
         }
 
+        var type = TypeCombo.SelectedIndex >= 0 && TypeCombo.SelectedIndex < TypeMap.Length
+            ? TypeMap[TypeCombo.SelectedIndex] : ScheduleType.Sleep;
+
         Result = new ScheduleEntry
         {
             Time = $"{h:D2}:{m:D2}",
-            Type = TypeCombo.SelectedIndex >= 0 && TypeCombo.SelectedIndex < TypeMap.Length
-                ? TypeMap[TypeCombo.SelectedIndex] : ScheduleType.Sleep,
+            Type = type,
             Repeat = (RepeatType)RepeatCombo.SelectedIndex,
             Days = days,
             Enabled = true,
+            WarnBeforeSleep = WarnCb.IsChecked == true && type != ScheduleType.Wake,
         };
 
         DialogResult = true;

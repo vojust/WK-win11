@@ -38,7 +38,7 @@
             <ComboBoxItem Content="Один раз" />
         </ComboBox>
 
-        <GroupBox Grid.Row="3" Header="Дни недели" x:Name="DaysGroup" Visibility="Hidden" Margin="0,0,0,8">
+        <GroupBox Grid.Row="3" Header="Дни недели" x:Name="DaysGroup" Visibility="Hidden" Margin="0,0,8,8">
             <WrapPanel Margin="4">
                 <CheckBox x:Name="MonCb" Content="Пн" Margin="4" />
                 <CheckBox x:Name="TueCb" Content="Вт" Margin="4" />
@@ -49,6 +49,9 @@
                 <CheckBox x:Name="SunCb" Content="Вс" Margin="4" />
             </WrapPanel>
         </GroupBox>
+
+        <CheckBox Grid.Row="4" x:Name="WarnCb" Content="Предупреждать за 5 минут до выключения"
+                  Margin="0,0,0,8" />
 
         <Button Grid.Row="6" Content="Сохранить" Click="OnSave" IsDefault="True" Height="30" Width="120"
                 HorizontalAlignment="Right" Margin="0,8,0,0" />
