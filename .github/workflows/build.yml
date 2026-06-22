@@ -39,13 +39,15 @@ jobs:
         run: |
           $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
           dotnet publish PC_Scheduler/PCScheduler -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:BUILD_VERSION=$tag -o publish
+          Rename-Item publish/PCScheduler.exe "PCScheduler-$tag.exe"
+          echo $tag > publish/TAG
 
       - name: Create Release
         shell: pwsh
         run: |
-          $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
-          gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
-          echo $tag > publish/TAG
+          $tag = (Get-Content publish/TAG).Trim()
+          $file = "publish/PCScheduler-$tag.exe"
+          gh release create $tag $file --title "PCScheduler $tag" --notes "Автоматическая сборка"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

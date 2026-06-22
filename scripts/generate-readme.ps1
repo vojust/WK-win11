@@ -1,7 +1,7 @@
 param($Tag)
 
 $date = (Get-Date).ToString('dd.MM.yyyy HH:mm')
-$download = "https://github.com/vojust/WK-win11/releases/latest/download/PCScheduler.exe"
+$download = "https://github.com/vojust/WK-win11/releases/download/$Tag/PCScheduler-$Tag.exe"
 
 @"
 # PCScheduler
@@ -14,7 +14,7 @@ $download = "https://github.com/vojust/WK-win11/releases/latest/download/PCSched
 
 ## Скачать
 
-[📥 PCScheduler.exe]($download) (single-file, ~50 MB)
+[📥 PCScheduler-$Tag.exe]($download) (single-file, ~50 MB)
 
 ## Возможности
 
