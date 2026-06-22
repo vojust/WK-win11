@@ -57,7 +57,7 @@
 
         <Button Grid.Row="6" Content="Сохранить" Click="OnSave" IsDefault="True" Height="34" Width="120"
                 HorizontalAlignment="Right" Margin="0,8,0,0"
-                Foreground="{StaticResource BgDark}" Background="{StaticResource AccentBrush}"
+                Foreground="{StaticResource WindowBg}" Background="{StaticResource AccentBrush}"
                 BorderBrush="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="14" />
     </Grid>
 </Window>

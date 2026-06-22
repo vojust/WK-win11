@@ -36,7 +36,7 @@
             <Button x:Name="DeleteAllBtn" Content="🗑 Всё" Click="OnDeleteAll" Width="70" Margin="4" />
             <Button x:Name="TestWakeBtn" Content="Тест пробуждения" Click="OnTestWake" Width="130" Margin="4" />
             <Button x:Name="ApplyBtn" Content="Применить" Click="OnApply" Width="100" Margin="4" FontWeight="Bold"
-                    Foreground="{StaticResource BgDark}" Background="{StaticResource AccentBrush}"
+                    Foreground="{StaticResource WindowBg}" Background="{StaticResource AccentBrush}"
                     BorderBrush="{StaticResource AccentBrush}" />
         </StackPanel>
 
