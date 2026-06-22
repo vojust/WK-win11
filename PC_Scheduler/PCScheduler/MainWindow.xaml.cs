@@ -40,7 +40,7 @@ public partial class MainWindow : Window
         menu.Items.Add("Выход", null, (_, _) =>
         {
             _tray.Visible = false;
-            Application.Current.Shutdown();
+            System.Windows.Application.Current.Shutdown();
         });
         _tray.ContextMenuStrip = menu;
         _tray.DoubleClick += (_, _) => { Show(); WindowState = WindowState.Normal; };
