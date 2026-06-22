@@ -87,6 +87,12 @@ public static class SchedulerService
             args.Add("/st"); args.Add(entry.TimeFormatted);
             args.Add("/d"); args.Add(string.Join(",", entry.Days));
         }
+        else if (isWake)
+        {
+            args.Add("/sc"); args.Add("weekly");
+            args.Add("/st"); args.Add(entry.TimeFormatted);
+            args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI,SAT,SUN");
+        }
         else
         {
             args.Add("/sc"); args.Add("daily");
