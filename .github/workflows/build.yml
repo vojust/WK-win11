@@ -41,8 +41,11 @@ jobs:
       - name: Create Release
         shell: pwsh
         run: |
+          # delete all old releases
+          gh release list --limit 50 --json tagName | ConvertFrom-Json | % {
+            gh release delete $_.tagName --yes --cleanup-tag 2>$null
+          }
           $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
-          gh release delete $tag --yes --cleanup-tag 2>$null
           gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
