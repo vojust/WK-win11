@@ -56,11 +56,11 @@ public static class SchedulerService
         try { Delete(name); } catch { }
 
         var args = new List<string> { "/create", "/tn", name };
+        var isWake = entry.Type == ScheduleType.Wake;
 
-        if (entry.Type == ScheduleType.Wake)
+        if (isWake)
         {
             args.Add("/tr"); args.Add("exit");
-            args.Add("/WAKE");
         }
         else
         {
@@ -81,8 +81,6 @@ public static class SchedulerService
             args.Add("/st"); args.Add(entry.TimeFormatted);
         }
 
-        args.Add("/f");
-
         if (entry.Repeat == RepeatType.Weekdays)
         {
             args.Add("/d"); args.Add("MON,TUE,WED,THU,FRI");
@@ -91,6 +89,10 @@ public static class SchedulerService
         {
             args.Add("/d"); args.Add(string.Join(",", entry.Days));
         }
+
+        args.Add("/f");
+
+        if (isWake) args.Add("/WAKE");
 
         Run(args.ToArray());
     }
