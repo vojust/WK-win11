@@ -207,8 +207,10 @@ public static class SchedulerService
             sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Daily -At \"{time}\"");
         }
 
-        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun");
-        sb.AppendLine($"Register-ScheduledTask -TaskName \"{name}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 5)");
+        sb.AppendLine($"$task = Register-ScheduledTask -TaskName \"{name}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+        sb.AppendLine("$task.Principal.RunLevel = 'Highest'");
+        sb.AppendLine("$task | Set-ScheduledTask");
 
         RunPowerShell(sb.ToString());
     }
@@ -308,8 +310,10 @@ public static class SchedulerService
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("$action = New-ScheduledTaskAction -Execute 'exit'");
         sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Once -At \"{time:HH:mm}\" -RepetitionDuration ([TimeSpan]::Zero)");
-        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun");
-        sb.AppendLine($"Register-ScheduledTask -TaskName \"{tag}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 5)");
+        sb.AppendLine($"$task = Register-ScheduledTask -TaskName \"{tag}\" -Action $action -Trigger $trigger -Settings $settings -Force");
+        sb.AppendLine("$task.Principal.RunLevel = 'Highest'");
+        sb.AppendLine("$task | Set-ScheduledTask");
 
         RunPowerShell(sb.ToString());
     }

@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using PCScheduler.Core;
@@ -17,9 +16,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        var ver = Assembly.GetExecutingAssembly()
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        if (!string.IsNullOrEmpty(ver)) Title = $"PCScheduler {ver}";
         _configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "PCScheduler", "schedules.json");
@@ -207,32 +203,6 @@ public partial class MainWindow : Window
         {
             ApplyBtn.IsEnabled = true;
             ApplyBtn.Content = "Применить";
-        }
-    }
-
-    async void OnTestWake(object sender, RoutedEventArgs e)
-    {
-        if (System.Windows.MessageBox.Show("Создать задачу пробуждения через 2 минуты?",
-                "Тест пробуждения", MessageBoxButton.YesNo, MessageBoxImage.Question)
-                != MessageBoxResult.Yes) return;
-
-        TestWakeBtn.IsEnabled = false;
-        try
-        {
-            await Task.Run(() => SchedulerService.ScheduleTestWake());
-            Log("Тестовая задача пробуждения создана на +2 мин");
-            await RefreshStatus();
-            ShowTrayBalloon("Тестовая задача создана. ПК проснётся через 2 минуты.");
-        }
-        catch (Exception ex)
-        {
-            Log($"Ошибка теста: {ex.Message}");
-            System.Windows.MessageBox.Show($"Не удалось создать тестовую задачу:\n{ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        finally
-        {
-            TestWakeBtn.IsEnabled = true;
         }
     }
 

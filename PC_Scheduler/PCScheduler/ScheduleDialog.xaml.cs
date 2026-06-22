@@ -7,7 +7,7 @@ public partial class ScheduleDialog : Window
 {
     public ScheduleEntry? Result { get; private set; }
 
-    static readonly ScheduleType[] TypeMap = { ScheduleType.Sleep, ScheduleType.Hibernate, ScheduleType.Wake };
+    static readonly ScheduleType[] TypeMap = { ScheduleType.Sleep, ScheduleType.Wake };
     static readonly string[] Hours = Enumerable.Range(0, 24).Select(i => $"{i:D2}").ToArray();
     static readonly string[] Minutes = Enumerable.Range(0, 12).Select(i => $"{(i * 5):D2}").ToArray();
 
@@ -46,7 +46,7 @@ public partial class ScheduleDialog : Window
 
     void UpdateWarnVisibility()
     {
-        WarnCb.Visibility = TypeCombo.SelectedIndex < 2 ? Visibility.Visible : Visibility.Collapsed;
+        WarnCb.Visibility = TypeCombo.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void CheckDaysVisibility(int idx)
