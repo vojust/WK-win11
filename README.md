@@ -1,14 +1,14 @@
 # PCScheduler
 
-<img src="https://img.shields.io/badge/version-v26.622.1637-blue?style=flat-square" alt="version"/>
+<img src="https://img.shields.io/badge/version-v26.622.1644-blue?style=flat-square" alt="version"/>
 <img src="https://img.shields.io/github/actions/workflow/status/vojust/WK-win11/.github%2Fworkflows%2Fbuild.yml?branch=main&style=flat-square&label=build" alt="build"/>
-<img src="https://img.shields.io/badge/updated-22.06.2026 16:37-lightgrey?style=flat-square" alt="updated"/>
+<img src="https://img.shields.io/badge/updated-22.06.2026 16:45-lightgrey?style=flat-square" alt="updated"/>
 
 Планировщик включения/выключения ПК по расписанию. C# WPF (.NET 8), интеграция с Task Scheduler. Версия в названии файла: PCScheduler-vYY.Mdd.HHmm.exe.
 
 ## Скачать
 
-[📥 PCScheduler-v26.622.1637.exe](https://github.com/vojust/WK-win11/releases/download/v26.622.1637/PCScheduler-v26.622.1637.exe) (single-file, ~50 MB)
+[📥 PCScheduler-v26.622.1644.exe](https://github.com/vojust/WK-win11/releases/download/v26.622.1644/PCScheduler-v26.622.1644.exe) (single-file, ~50 MB)
 
 ## Возможности
 
@@ -31,4 +31,4 @@
 
 | Версия | Дата |
 |---|---|
-| v26.622.1637 | 22.06.2026 16:37 |
+| v26.622.1644 | 22.06.2026 16:45 |
