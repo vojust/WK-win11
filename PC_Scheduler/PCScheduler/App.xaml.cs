@@ -9,7 +9,7 @@ public partial class App : System.Windows.Application
     {
         DispatcherUnhandledException += (_, args) =>
         {
-            MessageBox.Show(args.Exception.ToString(), "Необработанная ошибка",
+            System.Windows.MessageBox.Show(args.Exception.ToString(), "Необработанная ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };

@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Log($"Ошибка загрузки: {ex.Message}");
-            MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
+            System.Windows.MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -90,7 +90,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Log($"Ошибка сохранения: {ex.Message}");
-            MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка",
+            System.Windows.MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -145,7 +145,7 @@ public partial class MainWindow : Window
     {
         var sel = Selected();
         if (sel == null) return;
-        if (MessageBox.Show("Удалить выбранное расписание?", "Подтверждение",
+        if (System.Windows.MessageBox.Show("Удалить выбранное расписание?", "Подтверждение",
                 MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
             _entries.Remove(sel);
@@ -156,7 +156,7 @@ public partial class MainWindow : Window
 
     async void OnDeleteAll(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Удалить все задачи планировщика и очистить список?",
+        if (System.Windows.MessageBox.Show("Удалить все задачи планировщика и очистить список?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question)
                 != MessageBoxResult.Yes) return;
 
@@ -181,7 +181,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Log($"Ошибка применения: {ex.Message}");
-            MessageBox.Show($"Не удалось применить расписание:\n{ex.Message}",
+            System.Windows.MessageBox.Show($"Не удалось применить расписание:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
@@ -193,7 +193,7 @@ public partial class MainWindow : Window
 
     async void OnTestWake(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Создать задачу пробуждения через 2 минуты?",
+        if (System.Windows.MessageBox.Show("Создать задачу пробуждения через 2 минуты?",
                 "Тест пробуждения", MessageBoxButton.YesNo, MessageBoxImage.Question)
                 != MessageBoxResult.Yes) return;
 
@@ -208,7 +208,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Log($"Ошибка теста: {ex.Message}");
-            MessageBox.Show($"Не удалось создать тестовую задачу:\n{ex.Message}",
+            System.Windows.MessageBox.Show($"Не удалось создать тестовую задачу:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally

@@ -46,7 +46,7 @@ public partial class ScheduleDialog : Window
         var time = TimeBox.Text.Trim();
         if (!System.Text.RegularExpressions.Regex.IsMatch(time, @"^\d{1,2}:\d{2}$"))
         {
-            MessageBox.Show(this, "Введите время в формате ЧЧ:ММ", "Ошибка",
+            System.Windows.MessageBox.Show(this, "Введите время в формате ЧЧ:ММ", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             TimeBox.Focus();
             return;
@@ -57,7 +57,7 @@ public partial class ScheduleDialog : Window
         var m = int.Parse(parts[1]);
         if (h > 23 || m > 59)
         {
-            MessageBox.Show(this, "Введите корректное время (0-23:0-59)", "Ошибка",
+            System.Windows.MessageBox.Show(this, "Введите корректное время (0-23:0-59)", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -73,7 +73,7 @@ public partial class ScheduleDialog : Window
 
         if (RepeatCombo.SelectedIndex == 2 && days.Count == 0)
         {
-            MessageBox.Show(this, "Выберите хотя бы один день недели", "Ошибка",
+            System.Windows.MessageBox.Show(this, "Выберите хотя бы один день недели", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
