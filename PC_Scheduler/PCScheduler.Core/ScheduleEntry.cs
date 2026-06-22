@@ -33,7 +33,62 @@ public class ScheduleEntry
         _ => ""
     };
     [JsonIgnore] public string StatusDisplay => Enabled ? "✓" : "✗";
-        [JsonIgnore] public string WarnDisplay => Type != ScheduleType.Wake && WarnBeforeSleep ? "⚠ 5 минут" : "";
+    [JsonIgnore] public string TimeUntilDisplay
+    {
+        get
+        {
+            if (!Enabled) return "";
+            var next = GetNextTime();
+            if (next == null) return "";
+            var diff = next.Value - DateTime.Now;
+            if (diff.TotalSeconds <= 0) return "сейчас";
+            if (diff.TotalDays >= 1) return $"{(int)diff.TotalDays}д {diff.Hours:00}:{diff.Minutes:00}";
+            return $"{(int)diff.TotalHours:00}:{diff.Minutes:00}:{diff.Seconds:00}";
+        }
+    }
+
+    DateTime? GetNextTime()
+    {
+        var p = Time.Split(':');
+        var h = int.Parse(p[0]);
+        var m = int.Parse(p[1]);
+        var now = DateTime.Now;
+        var today = now.Date.AddHours(h).AddMinutes(m);
+
+        if (Repeat == RepeatType.Daily)
+            return today > now ? today : today.AddDays(1);
+
+        if (Repeat == RepeatType.Weekdays)
+        {
+            var d = today > now ? today : today.AddDays(1);
+            while (d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday)
+                d = d.AddDays(1);
+            return d;
+        }
+
+        if (Repeat == RepeatType.Weekly && Days.Count > 0)
+        {
+            var dow = Days.Select(DayOfWeekFromAbbr).ToHashSet();
+            var c = today > now ? today : today.AddDays(1);
+            for (int i = 0; i < 14; i++)
+            {
+                if (dow.Contains(c.DayOfWeek)) return c;
+                c = c.AddDays(1);
+            }
+            return null;
+        }
+
+        // Once
+        return today > now ? today : today.AddDays(1);
+    }
+
+    static DayOfWeek DayOfWeekFromAbbr(string en) => en switch
+    {
+        "MON" => DayOfWeek.Monday, "TUE" => DayOfWeek.Tuesday,
+        "WED" => DayOfWeek.Wednesday, "THU" => DayOfWeek.Thursday,
+        "FRI" => DayOfWeek.Friday, "SAT" => DayOfWeek.Saturday,
+        "SUN" => DayOfWeek.Sunday, _ => DayOfWeek.Monday,
+    };
 
     private static string DayNameRu(string en) => en switch
     {

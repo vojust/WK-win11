@@ -152,24 +152,24 @@ public class ModelTests
     }
 
     [Fact]
-    public void WarnDisplay_EmptyForWake()
+    public void TimeUntil_EmptyWhenDisabled()
     {
-        var e = new ScheduleEntry { Type = ScheduleType.Wake, WarnBeforeSleep = true };
-        Assert.Equal("", e.WarnDisplay);
+        var e = new ScheduleEntry { Enabled = false };
+        Assert.Equal("", e.TimeUntilDisplay);
     }
 
     [Fact]
-    public void WarnDisplay_ShowsForSleep()
+    public void TimeUntil_ShowsForDaily()
     {
-        var e = new ScheduleEntry { Type = ScheduleType.Sleep, WarnBeforeSleep = true };
-        Assert.Contains("5 мин", e.WarnDisplay);
+        var e = new ScheduleEntry { Repeat = RepeatType.Daily, Time = "23:59" };
+        Assert.NotEqual("", e.TimeUntilDisplay);
     }
 
     [Fact]
-    public void WarnDisplay_EmptyWhenDisabled()
+    public void TimeUntil_SkipWeekends()
     {
-        var e = new ScheduleEntry { Type = ScheduleType.Sleep, WarnBeforeSleep = false };
-        Assert.Equal("", e.WarnDisplay);
+        var e = new ScheduleEntry { Repeat = RepeatType.Weekdays, Time = "23:59" };
+        Assert.NotEqual("", e.TimeUntilDisplay);
     }
 
     [Fact]
