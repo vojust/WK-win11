@@ -186,33 +186,71 @@ public static class SchedulerService
     static void CreateWakeViaPowerShell(string name, ScheduleEntry entry)
     {
         var time = entry.TimeFormatted;
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("$action = New-ScheduledTaskAction -Execute 'exit'");
+        var now = DateTime.Now;
+        var start = now.Date.AddHours(int.Parse(time.Split(':')[0])).AddMinutes(int.Parse(time.Split(':')[1]));
 
-        if (entry.Repeat == RepeatType.Once)
+        if (entry.Repeat == RepeatType.Daily)
         {
-            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Once -At \"{time}\"");
+            if (start <= now) start = start.AddDays(1);
+        }
+        else if (entry.Repeat == RepeatType.Once)
+        {
+            if (start <= now) start = start.AddDays(1);
         }
         else if (entry.Repeat == RepeatType.Weekdays)
         {
-            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek \"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\" -At \"{time}\"");
+            if (start <= now) start = start.AddDays(1);
+            while (start.DayOfWeek == DayOfWeek.Saturday || start.DayOfWeek == DayOfWeek.Sunday)
+                start = start.AddDays(1);
         }
         else if (entry.Repeat == RepeatType.Weekly && entry.Days.Count > 0)
         {
-            var days = string.Join(",", entry.Days.Select(d => $"\"{DayNames.GetValueOrDefault(d, d)}\""));
-            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek {days} -At \"{time}\"");
+            if (start <= now) start = start.AddDays(1);
+            var dow = entry.Days.Select(d => d switch
+            {
+                "MON" => DayOfWeek.Monday, "TUE" => DayOfWeek.Tuesday,
+                "WED" => DayOfWeek.Wednesday, "THU" => DayOfWeek.Thursday,
+                "FRI" => DayOfWeek.Friday, "SAT" => DayOfWeek.Saturday,
+                "SUN" => DayOfWeek.Sunday, _ => DayOfWeek.Monday
+            }).ToHashSet();
+            for (int i = 0; i < 14 && !dow.Contains(start.DayOfWeek); i++)
+                start = start.AddDays(1);
         }
-        else
+
+        var startBoundary = start.ToString("yyyy-MM-ddTHH:mm:ss");
+        var triggerXml = entry.Repeat switch
         {
-            sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Daily -At \"{time}\"");
+            RepeatType.Once => $"<TimeTrigger><StartBoundary>{startBoundary}</StartBoundary><Enabled>true</Enabled></TimeTrigger>",
+            RepeatType.Weekdays => $@"<CalendarTrigger><StartBoundary>{startBoundary}</StartBoundary><Enabled>true</Enabled><ScheduleByWeek><DaysList><Monday/><Tuesday/><Wednesday/><Thursday/><Friday/></DaysList></ScheduleByWeek></CalendarTrigger>",
+            RepeatType.Weekly when entry.Days.Count > 0 => $@"<CalendarTrigger><StartBoundary>{startBoundary}</StartBoundary><Enabled>true</Enabled><ScheduleByWeek><DaysList>{string.Join("", entry.Days.Select(d => $"<{DayNames.GetValueOrDefault(d, d)} />"))}</DaysList></ScheduleByWeek></CalendarTrigger>",
+            _ => $"<CalendarTrigger><StartBoundary>{startBoundary}</StartBoundary><Enabled>true</Enabled><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger>",
+        };
+
+        var xml = $@"<?xml version=""1.0"" encoding=""UTF-16""?>
+<Task version=""1.4"" xmlns=""http://schemas.microsoft.com/windows/2004/02/mit/task"">
+  <RegistrationInfo><Author>PCScheduler</Author></RegistrationInfo>
+  <Triggers>{triggerXml}</Triggers>
+  <Principals><Principal id=""Author""><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
+  <Settings>
+    <AllowStartIfOnBatteries>true</AllowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <WakeToRun>true</WakeToRun>
+    <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context=""Author""><Exec><Command>exit</Command></Exec></Actions>
+</Task>";
+
+        var xmlPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{name}.xml");
+        System.IO.File.WriteAllText(xmlPath, xml);
+        try
+        {
+            RunSchtasks(new[] { "/create", "/tn", name, "/xml", xmlPath, "/f" });
         }
-
-        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 5)");
-        sb.AppendLine($"$task = Register-ScheduledTask -TaskName \"{name}\" -Action $action -Trigger $trigger -Settings $settings -Force");
-        sb.AppendLine("$task.Principal.RunLevel = 'Highest'");
-        sb.AppendLine("$task | Set-ScheduledTask");
-
-        RunPowerShell(sb.ToString());
+        finally
+        {
+            try { System.IO.File.Delete(xmlPath); } catch { }
+        }
     }
 
     public static void Remove(ScheduleEntry entry)
