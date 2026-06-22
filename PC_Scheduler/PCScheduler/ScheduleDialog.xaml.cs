@@ -8,17 +8,26 @@ public partial class ScheduleDialog : Window
     public ScheduleEntry? Result { get; private set; }
 
     static readonly ScheduleType[] TypeMap = { ScheduleType.Sleep, ScheduleType.Hibernate, ScheduleType.Wake };
+    static readonly string[] Hours = Enumerable.Range(0, 24).Select(i => $"{i:D2}").ToArray();
+    static readonly string[] Minutes = Enumerable.Range(0, 60).Select(i => $"{i:D2}").ToArray();
 
     public ScheduleDialog(Window owner, ScheduleEntry? entry = null)
     {
         InitializeComponent();
         Owner = owner;
 
+        HourCombo.ItemsSource = Hours;
+        MinCombo.ItemsSource = Minutes;
+
         if (entry != null)
         {
             Title = "Редактирование";
             TypeCombo.SelectedIndex = Array.IndexOf(TypeMap, entry.Type);
-            TimeBox.Text = entry.TimeFormatted;
+
+            var parts = entry.TimeFormatted.Split(':');
+            HourCombo.Text = parts[0];
+            MinCombo.Text = parts[1];
+
             RepeatCombo.SelectedIndex = (int)entry.Repeat;
             MonCb.IsChecked = entry.Days.Contains("MON");
             TueCb.IsChecked = entry.Days.Contains("TUE");
@@ -43,22 +52,19 @@ public partial class ScheduleDialog : Window
 
     void OnSave(object sender, RoutedEventArgs e)
     {
-        var time = TimeBox.Text.Trim();
-        if (!System.Text.RegularExpressions.Regex.IsMatch(time, @"^\d{1,2}:\d{2}$"))
+        if (!int.TryParse(HourCombo.Text, out var h) || h < 0 || h > 23)
         {
-            System.Windows.MessageBox.Show(this, "Введите время в формате ЧЧ:ММ", "Ошибка",
+            System.Windows.MessageBox.Show(this, "Часы: введите число от 0 до 23", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
-            TimeBox.Focus();
+            HourCombo.Focus();
             return;
         }
 
-        var parts = time.Split(':');
-        var h = int.Parse(parts[0]);
-        var m = int.Parse(parts[1]);
-        if (h > 23 || m > 59)
+        if (!int.TryParse(MinCombo.Text, out var m) || m < 0 || m > 59)
         {
-            System.Windows.MessageBox.Show(this, "Введите корректное время (0-23:0-59)", "Ошибка",
+            System.Windows.MessageBox.Show(this, "Минуты: введите число от 0 до 59", "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+            MinCombo.Focus();
             return;
         }
 
