@@ -339,20 +339,45 @@ public static class SchedulerService
         }
     }
 
-    public static void ScheduleTestWake()
+    public static void ScheduleTestTasks(DateTime sleepTime, DateTime wakeTime)
     {
-        var time = DateTime.Now.AddMinutes(2);
-        var tag = $"{Prefix}test_{time:HHmm}";
-        Delete(tag);
+        // Sleep task (via schtasks)
+        var sleepArgs = new List<string>
+        {
+            "/create", "/tn", $"{Prefix}test_sleep",
+            "/tr", "rundll32.exe powrprof.dll,SetSuspendState 0,1,0",
+            "/sc", "once",
+            "/sd", sleepTime.ToString("yyyy/MM/dd"),
+            "/st", sleepTime.ToString("HH:mm"),
+            "/f",
+        };
+        RunSchtasks(sleepArgs.ToArray());
 
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("$action = New-ScheduledTaskAction -Execute 'exit'");
-        sb.AppendLine($"$trigger = New-ScheduledTaskTrigger -Once -At \"{time:HH:mm}\" -RepetitionDuration ([TimeSpan]::Zero)");
-        sb.AppendLine("$settings = New-ScheduledTaskSettingsSet -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 5)");
-        sb.AppendLine($"$task = Register-ScheduledTask -TaskName \"{tag}\" -Action $action -Trigger $trigger -Settings $settings -Force");
-        sb.AppendLine("$task.Principal.RunLevel = 'Highest'");
-        sb.AppendLine("$task | Set-ScheduledTask");
-
-        RunPowerShell(sb.ToString());
+        // Wake task (via XML)
+        var wakeStart = wakeTime.ToString("yyyy-MM-ddTHH:mm:ss");
+        var wakeXml = $@"<?xml version=""1.0"" encoding=""UTF-16""?>
+<Task version=""1.4"" xmlns=""http://schemas.microsoft.com/windows/2004/02/mit/task"">
+  <RegistrationInfo><Author>PCScheduler</Author></RegistrationInfo>
+  <Triggers><TimeTrigger><StartBoundary>{wakeStart}</StartBoundary><Enabled>true</Enabled></TimeTrigger></Triggers>
+  <Principals><Principal id=""Author""><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
+  <Settings>
+    <AllowStartIfOnBatteries>true</AllowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <WakeToRun>true</WakeToRun>
+    <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context=""Author""><Exec><Command>exit</Command></Exec></Actions>
+</Task>";
+        var xmlPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Prefix}test_wake.xml");
+        System.IO.File.WriteAllText(xmlPath, wakeXml, System.Text.Encoding.Unicode);
+        try
+        {
+            RunSchtasks(new[] { "/create", "/tn", $"{Prefix}test_wake", "/xml", xmlPath, "/f" });
+        }
+        finally
+        {
+            try { System.IO.File.Delete(xmlPath); } catch { }
+        }
     }
 }

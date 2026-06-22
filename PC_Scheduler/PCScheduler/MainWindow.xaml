@@ -35,6 +35,7 @@
             <Button x:Name="DeleteAllBtn" Content="🗑 Всё" Click="OnDeleteAll" Width="70" Margin="4" Padding="8,4" />
 
             <Button x:Name="ApplyBtn" Content="Применить" Click="OnApply" Width="100" Margin="4" Padding="8,4" FontWeight="Bold" />
+            <Button x:Name="TestBtn" Content="Тест" Click="OnTest" Width="60" Margin="4" Padding="8,4" />
         </StackPanel>
 
         <Border Grid.Row="3" BorderBrush="LightGray" BorderThickness="0,1,0,0" Padding="0,4">

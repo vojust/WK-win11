@@ -206,6 +206,37 @@ public partial class MainWindow : Window
         }
     }
 
+    async void OnTest(object sender, RoutedEventArgs e)
+    {
+        if (System.Windows.MessageBox.Show("Через 1 минуту ПК уйдёт в сон, через 5 — проснётся. Продолжить?",
+                "Тест", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+
+        TestBtn.IsEnabled = false;
+        try
+        {
+            var sleepTime = DateTime.Now.AddMinutes(1);
+            var wakeTime = DateTime.Now.AddMinutes(5);
+            await Task.Run(() =>
+            {
+                SchedulerService.Delete("PCSched_test_sleep");
+                SchedulerService.Delete("PCSched_test_wake");
+                SchedulerService.ScheduleTestTasks(sleepTime, wakeTime);
+            });
+            Log($"Тест: сон в {sleepTime:HH:mm}, пробуждение в {wakeTime:HH:mm}");
+            await RefreshStatus();
+        }
+        catch (Exception ex)
+        {
+            Log($"Ошибка теста: {ex.Message}");
+            System.Windows.MessageBox.Show($"Ошибка:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            TestBtn.IsEnabled = true;
+        }
+    }
+
     async void OnRefreshStatus(object sender, RoutedEventArgs e) => await RefreshStatus();
 
     async Task RefreshStatus()
