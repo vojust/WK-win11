@@ -242,7 +242,7 @@ public static class SchedulerService
 </Task>";
 
         var xmlPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{name}.xml");
-        System.IO.File.WriteAllText(xmlPath, xml);
+        System.IO.File.WriteAllText(xmlPath, xml, System.Text.Encoding.Unicode);
         try
         {
             RunSchtasks(new[] { "/create", "/tn", name, "/xml", xmlPath, "/f" });
