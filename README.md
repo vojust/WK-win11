@@ -1,8 +1,8 @@
 # PCScheduler
 
-<img src="https://img.shields.io/badge/version-v26.622.1436-blue?style=flat-square" alt="version"/>
+<img src="https://img.shields.io/badge/version-v26.622.1445-blue?style=flat-square" alt="version"/>
 <img src="https://img.shields.io/github/actions/workflow/status/vojust/WK-win11/.github%2Fworkflows%2Fbuild.yml?branch=main&style=flat-square&label=build" alt="build"/>
-<img src="https://img.shields.io/badge/updated-22.06.2026 14:37-lightgrey?style=flat-square" alt="updated"/>
+<img src="https://img.shields.io/badge/updated-22.06.2026 14:48-lightgrey?style=flat-square" alt="updated"/>
 
 Планировщик включения/выключения ПК по расписанию. C# WPF (.NET 8), интеграция с Task Scheduler.
 
@@ -31,4 +31,4 @@
 
 | Версия | Дата |
 |---|---|
-| v26.622.1436 | 22.06.2026 14:37 |
+| v26.622.1445 | 22.06.2026 14:48 |
