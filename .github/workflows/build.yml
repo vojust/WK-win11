@@ -44,10 +44,6 @@ jobs:
         shell: pwsh
         run: |
           $tag = "v$(Get-Date -Format 'yy.Mdd.HHmm')"
-          # delete all old releases
-          gh release list --limit 50 --json tagName | ConvertFrom-Json | % {
-            gh release delete $_.tagName --yes --cleanup-tag 2>$null
-          }
           gh release create $tag publish/PCScheduler.exe --title "PCScheduler $tag" --notes "Автоматическая сборка"
           echo $tag > publish/TAG
         env:
