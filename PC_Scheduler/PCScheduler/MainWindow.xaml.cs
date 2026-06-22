@@ -11,6 +11,7 @@ public partial class MainWindow : Window
 {
     readonly ObservableCollection<ScheduleEntry> _entries = new();
     readonly string _configPath;
+    System.Windows.Forms.NotifyIcon? _tray;
 
     public MainWindow()
     {
@@ -20,6 +21,39 @@ public partial class MainWindow : Window
             "PCScheduler", "schedules.json");
         ScheduleGrid.ItemsSource = _entries;
         Load();
+        InitTray();
+    }
+
+    void InitTray()
+    {
+        _tray = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(
+                System.Windows.Forms.Application.ExecutablePath),
+            Text = "PCScheduler",
+            Visible = true,
+        };
+        var menu = new System.Windows.Forms.ContextMenuStrip();
+        menu.Items.Add("Показать", null, (_, _) => { Show(); WindowState = WindowState.Normal; });
+        menu.Items.Add("Применить", null, (_, _) => OnApply(null!, null!));
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        menu.Items.Add("Выход", null, (_, _) =>
+        {
+            _tray.Visible = false;
+            Application.Current.Shutdown();
+        });
+        _tray.ContextMenuStrip = menu;
+        _tray.DoubleClick += (_, _) => { Show(); WindowState = WindowState.Normal; };
+    }
+
+    void Log(string msg)
+    {
+        var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+        Dispatcher.Invoke(() =>
+        {
+            LogBox.AppendText(line + "\n");
+            LogBox.ScrollToEnd();
+        });
     }
 
     void Load()
@@ -33,10 +67,13 @@ public partial class MainWindow : Window
                 if (data != null)
                     foreach (var e in data) _entries.Add(e);
             }
+            Log($"Загружено {_entries.Count} записей");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Log($"Ошибка загрузки: {ex.Message}");
+            MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -46,11 +83,15 @@ public partial class MainWindow : Window
         {
             var dir = Path.GetDirectoryName(_configPath);
             if (dir != null) Directory.CreateDirectory(dir);
-            File.WriteAllText(_configPath, JsonSerializer.Serialize(_entries.ToList(), new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(_configPath, JsonSerializer.Serialize(_entries.ToList(),
+                new JsonSerializerOptions { WriteIndented = true }));
+            Log("Конфиг сохранён");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Log($"Ошибка сохранения: {ex.Message}");
+            MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -71,6 +112,7 @@ public partial class MainWindow : Window
         {
             _entries.Add(dlg.Result);
             Save();
+            Log($"Добавлено: {dlg.Result.TypeDisplay} в {dlg.Result.TimeFormatted}");
         }
     }
 
@@ -85,6 +127,7 @@ public partial class MainWindow : Window
             dlg.Result.Id = sel.Id;
             _entries[idx] = dlg.Result;
             Save();
+            Log($"Изменено: {dlg.Result.TypeDisplay} в {dlg.Result.TimeFormatted}");
         }
     }
 
@@ -95,6 +138,7 @@ public partial class MainWindow : Window
         sel.Enabled = !sel.Enabled;
         ScheduleGrid.Items.Refresh();
         Save();
+        Log(sel.Enabled ? "Включено" : "Выключено");
     }
 
     void OnDelete(object sender, RoutedEventArgs e)
@@ -106,18 +150,21 @@ public partial class MainWindow : Window
         {
             _entries.Remove(sel);
             Save();
+            Log("Запись удалена");
         }
     }
 
     async void OnDeleteAll(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Удалить все задачи планировщика?", "Подтверждение",
-                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
-            return;
+        if (MessageBox.Show("Удалить все задачи планировщика и очистить список?",
+                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question)
+                != MessageBoxResult.Yes) return;
 
         await Task.Run(() => SchedulerService.DeleteAll());
         _entries.Clear();
         Save();
+        await RefreshStatus();
+        Log("Все задачи удалены");
     }
 
     async void OnApply(object sender, RoutedEventArgs e)
@@ -127,18 +174,94 @@ public partial class MainWindow : Window
         try
         {
             await Task.Run(() => SchedulerService.ApplyAll(_entries.ToList()));
-            MessageBox.Show("Расписание успешно применено!", "Готово",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            Log("Расписание применено");
+            await RefreshStatus();
+            ShowTrayBalloon("Расписание успешно применено!");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Не удалось применить расписание:\n{ex.Message}", "Ошибка",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            Log($"Ошибка применения: {ex.Message}");
+            MessageBox.Show($"Не удалось применить расписание:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
             ApplyBtn.IsEnabled = true;
             ApplyBtn.Content = "Применить";
         }
+    }
+
+    async void OnTestWake(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show("Создать задачу пробуждения через 2 минуты?",
+                "Тест пробуждения", MessageBoxButton.YesNo, MessageBoxImage.Question)
+                != MessageBoxResult.Yes) return;
+
+        TestWakeBtn.IsEnabled = false;
+        try
+        {
+            await Task.Run(() => SchedulerService.ScheduleTestWake());
+            Log("Тестовая задача пробуждения создана на +2 мин");
+            await RefreshStatus();
+            ShowTrayBalloon("Тестовая задача создана. ПК проснётся через 2 минуты.");
+        }
+        catch (Exception ex)
+        {
+            Log($"Ошибка теста: {ex.Message}");
+            MessageBox.Show($"Не удалось создать тестовую задачу:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            TestWakeBtn.IsEnabled = true;
+        }
+    }
+
+    async void OnRefreshStatus(object sender, RoutedEventArgs e) => await RefreshStatus();
+
+    async Task RefreshStatus()
+    {
+        StatusRefreshBtn.IsEnabled = false;
+        try
+        {
+            var tasks = await Task.Run(() => SchedulerService.QueryActiveTasks());
+            var count = tasks.Count;
+            StatusText.Text = $"Задач в планировщике: {count}";
+            StatusRefreshBtn.IsEnabled = true;
+        }
+        catch
+        {
+            StatusText.Text = "Задач в планировщике: ошибка";
+            StatusRefreshBtn.IsEnabled = true;
+        }
+    }
+
+    void ShowTrayBalloon(string text)
+    {
+        if (_tray != null)
+        {
+            _tray.BalloonTipTitle = "PCScheduler";
+            _tray.BalloonTipText = text;
+            _tray.ShowBalloonTip(3000);
+        }
+    }
+
+    void OnStateChanged(object? sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            Hide();
+            if (_tray != null)
+            {
+                _tray.Visible = true;
+                _tray.ShowBalloonTip(1000, "PCScheduler",
+                    "Приложение свёрнуто в трей. Двойной клик — показать.", ToolTipIcon.None);
+            }
+        }
+    }
+
+    void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        _tray?.Dispose();
     }
 }

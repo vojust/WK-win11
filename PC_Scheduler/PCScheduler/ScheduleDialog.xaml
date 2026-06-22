@@ -19,6 +19,7 @@
         <ComboBox Grid.Row="0" x:Name="TypeCombo" Margin="0,0,0,8" HorizontalAlignment="Right" Width="280"
                   SelectedIndex="0">
             <ComboBoxItem Content="Выключение (сон)" />
+            <ComboBoxItem Content="Выключение (гибернация)" />
             <ComboBoxItem Content="Включение (пробуждение из сна)" />
         </ComboBox>
 

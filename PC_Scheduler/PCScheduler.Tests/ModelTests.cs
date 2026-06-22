@@ -28,6 +28,13 @@ public class ModelTests
     }
 
     [Fact]
+    public void HibernateEntry_TypeDisplay_ReturnsRussian()
+    {
+        var e = new ScheduleEntry { Type = ScheduleType.Hibernate };
+        Assert.Equal("Гибернация", e.TypeDisplay);
+    }
+
+    [Fact]
     public void DailyRepeat_RepeatDisplay_ReturnsDaily()
     {
         var e = new ScheduleEntry { Repeat = RepeatType.Daily };

@@ -7,6 +7,8 @@ public partial class ScheduleDialog : Window
 {
     public ScheduleEntry? Result { get; private set; }
 
+    static readonly ScheduleType[] TypeMap = { ScheduleType.Sleep, ScheduleType.Hibernate, ScheduleType.Wake };
+
     public ScheduleDialog(Window owner, ScheduleEntry? entry = null)
     {
         InitializeComponent();
@@ -15,7 +17,7 @@ public partial class ScheduleDialog : Window
         if (entry != null)
         {
             Title = "Редактирование";
-            TypeCombo.SelectedIndex = entry.Type == ScheduleType.Sleep ? 0 : 1;
+            TypeCombo.SelectedIndex = Array.IndexOf(TypeMap, entry.Type);
             TimeBox.Text = entry.TimeFormatted;
             RepeatCombo.SelectedIndex = (int)entry.Repeat;
             MonCb.IsChecked = entry.Days.Contains("MON");
@@ -79,7 +81,8 @@ public partial class ScheduleDialog : Window
         Result = new ScheduleEntry
         {
             Time = $"{h:D2}:{m:D2}",
-            Type = TypeCombo.SelectedIndex == 0 ? ScheduleType.Sleep : ScheduleType.Wake,
+            Type = TypeCombo.SelectedIndex >= 0 && TypeCombo.SelectedIndex < TypeMap.Length
+                ? TypeMap[TypeCombo.SelectedIndex] : ScheduleType.Sleep,
             Repeat = (RepeatType)RepeatCombo.SelectedIndex,
             Days = days,
             Enabled = true,

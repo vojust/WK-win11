@@ -3,7 +3,7 @@ using PCScheduler.Core;
 
 namespace PCScheduler.Services;
 
-public class SchedulerService
+public static class SchedulerService
 {
     const string Prefix = "PCSched_";
 
@@ -68,17 +68,28 @@ public class SchedulerService
         if (entry.Type == ScheduleType.Wake)
         {
             args.Add("/tr"); args.Add("exit");
-            args.Add("/sc"); args.Add("daily");
-            args.Add("/st"); args.Add(entry.TimeFormatted);
-            args.Add("/f"); args.Add("/WAKE");
+            args.Add("/WAKE");
         }
         else
         {
-            args.Add("/tr"); args.Add("rundll32.exe powrprof.dll,SetSuspendState 0,1,0");
+            var flag = entry.Type == ScheduleType.Hibernate ? "1" : "0";
+            args.Add("/tr"); args.Add($"rundll32.exe powrprof.dll,SetSuspendState {flag},1,0");
+        }
+
+        if (entry.Repeat == RepeatType.Once)
+        {
+            var today = DateTime.Now.ToString("yyyy/MM/dd");
+            args.Add("/sc"); args.Add("once");
+            args.Add("/st"); args.Add(entry.TimeFormatted);
+            args.Add("/sd"); args.Add(today);
+        }
+        else
+        {
             args.Add("/sc"); args.Add("daily");
             args.Add("/st"); args.Add(entry.TimeFormatted);
-            args.Add("/f");
         }
+
+        args.Add("/f");
 
         if (entry.Repeat == RepeatType.Weekdays)
         {
@@ -110,12 +121,9 @@ public class SchedulerService
 
         try
         {
-            var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
-            foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            var lines = QueryRawTasks();
+            foreach (var tn in lines)
             {
-                var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
-                if (parts.Length < 2) continue;
-                var tn = parts[0].Trim('"').Trim();
                 if (tn.StartsWith(Prefix) && !active.Contains(tn))
                 {
                     try { Run(new[] { "/delete", "/tn", tn, "/f" }); }
@@ -130,12 +138,9 @@ public class SchedulerService
     {
         try
         {
-            var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
-            foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            var lines = QueryRawTasks();
+            foreach (var tn in lines)
             {
-                var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
-                if (parts.Length < 2) continue;
-                var tn = parts[0].Trim('"').Trim();
                 if (tn.StartsWith(Prefix))
                 {
                     try { Run(new[] { "/delete", "/tn", tn, "/f" }); }
@@ -144,5 +149,46 @@ public class SchedulerService
             }
         }
         catch { }
+    }
+
+    static List<string> QueryRawTasks()
+    {
+        var result = new List<string>();
+        var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
+        foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
+            if (parts.Length < 2) continue;
+            result.Add(parts[0].Trim('"').Trim());
+        }
+        return result;
+    }
+
+    public static List<string> QueryActiveTasks()
+    {
+        try
+        {
+            return QueryRawTasks().Where(t => t.StartsWith(Prefix)).ToList();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
+    public static void ScheduleTestWake()
+    {
+        var time = DateTime.Now.AddMinutes(2);
+        var tag = $"{Prefix}test_{time:HHmm}";
+        Delete(tag);
+        Run(new[]
+        {
+            "/create", "/tn", tag,
+            "/tr", "exit",
+            "/sc", "once",
+            "/st", $"{time:HH:mm}",
+            "/sd", $"{time:yyyy/MM/dd}",
+            "/f", "/WAKE"
+        });
     }
 }

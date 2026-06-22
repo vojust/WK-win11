@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace PCScheduler.Core;
 
-public enum ScheduleType { Sleep, Wake }
+public enum ScheduleType { Sleep, Hibernate, Wake }
 
 public enum RepeatType { Daily, Weekdays, Weekly, Once }
 
@@ -15,7 +15,13 @@ public class ScheduleEntry
     public bool Enabled { get; set; } = true;
     public List<string> Days { get; set; } = new();
 
-    [JsonIgnore] public string TypeDisplay => Type == ScheduleType.Sleep ? "Сон" : "Пробуждение";
+    [JsonIgnore] public string TypeDisplay => Type switch
+    {
+        ScheduleType.Sleep => "Сон",
+        ScheduleType.Hibernate => "Гибернация",
+        ScheduleType.Wake => "Пробуждение",
+        _ => ""
+    };
     [JsonIgnore] public string RepeatDisplay => Repeat switch
     {
         RepeatType.Daily => "Ежедневно",
