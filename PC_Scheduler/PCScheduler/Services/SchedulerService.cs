@@ -7,7 +7,7 @@ public static class SchedulerService
 {
     const string Prefix = "PCSched_";
 
-    static string Run(string[] args)
+    static Process StartSchtasks(string[] args)
     {
         var psi = new ProcessStartInfo("schtasks.exe")
         {
@@ -21,6 +21,12 @@ public static class SchedulerService
         var proc = Process.Start(psi);
         if (proc == null) throw new Exception("Не удалось запустить schtasks.exe");
         proc.WaitForExit();
+        return proc;
+    }
+
+    static string Run(string[] args)
+    {
+        var proc = StartSchtasks(args);
 
         if (proc.ExitCode != 0)
         {
@@ -34,21 +40,7 @@ public static class SchedulerService
 
     public static void Delete(string taskName)
     {
-        var psi = new ProcessStartInfo("schtasks.exe")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        psi.ArgumentList.Add("/delete");
-        psi.ArgumentList.Add("/tn");
-        psi.ArgumentList.Add(taskName);
-        psi.ArgumentList.Add("/f");
-
-        var proc = Process.Start(psi);
-        if (proc == null) return;
-        proc.WaitForExit();
+        var proc = StartSchtasks(new[] { "/delete", "/tn", taskName, "/f" });
 
         if (proc.ExitCode != 0)
         {
@@ -154,12 +146,16 @@ public static class SchedulerService
     static List<string> QueryRawTasks()
     {
         var result = new List<string>();
-        var outLines = Run(new[] { "/query", "/fo", "csv", "/nh" });
-        foreach (var line in outLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        var csv = Run(new[] { "/query", "/fo", "csv", "/nh" });
+        if (string.IsNullOrWhiteSpace(csv)) return result;
+
+        foreach (var line in csv.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var parts = line.Trim().Split(new[] { "\",\"" }, StringSplitOptions.None);
-            if (parts.Length < 2) continue;
-            result.Add(parts[0].Trim('"').Trim());
+            var t = line.Trim();
+            if (t.Length < 3 || !t.StartsWith('"')) continue;
+            var end = t.IndexOf("\",\"", 1);
+            if (end < 0) continue;
+            result.Add(t[1..end]);
         }
         return result;
     }

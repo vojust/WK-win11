@@ -160,11 +160,20 @@ public partial class MainWindow : Window
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question)
                 != MessageBoxResult.Yes) return;
 
-        await Task.Run(() => SchedulerService.DeleteAll());
-        _entries.Clear();
-        Save();
-        await RefreshStatus();
-        Log("Все задачи удалены");
+        try
+        {
+            await Task.Run(() => SchedulerService.DeleteAll());
+            _entries.Clear();
+            Save();
+            await RefreshStatus();
+            Log("Все задачи удалены");
+        }
+        catch (Exception ex)
+        {
+            Log($"Ошибка удаления: {ex.Message}");
+            System.Windows.MessageBox.Show($"Не удалось удалить задачи:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     async void OnApply(object sender, RoutedEventArgs e)

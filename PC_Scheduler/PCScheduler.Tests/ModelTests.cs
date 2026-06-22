@@ -119,6 +119,32 @@ public class ModelTests
     }
 
     [Fact]
+    public void OldConfig_Type1_DeserializesAsWake()
+    {
+        var json = """{"Type":1,"Time":"14:30","Repeat":1,"Enabled":true,"Days":[]}""";
+        var entry = System.Text.Json.JsonSerializer.Deserialize<ScheduleEntry>(json);
+        Assert.NotNull(entry);
+        Assert.Equal(ScheduleType.Wake, entry!.Type);
+    }
+
+    [Fact]
+    public void OldConfig_Type0_DeserializesAsSleep()
+    {
+        var json = """{"Type":0,"Time":"14:30","Repeat":0,"Enabled":true,"Days":[]}""";
+        var entry = System.Text.Json.JsonSerializer.Deserialize<ScheduleEntry>(json);
+        Assert.NotNull(entry);
+        Assert.Equal(ScheduleType.Sleep, entry!.Type);
+    }
+
+    [Fact]
+    public void NewConfig_WritesAsString()
+    {
+        var entry = new ScheduleEntry { Type = ScheduleType.Hibernate };
+        var json = System.Text.Json.JsonSerializer.Serialize(entry);
+        Assert.Contains("Hibernate", json);
+    }
+
+    [Fact]
     public void Days_CanBeEmpty()
     {
         var e = new ScheduleEntry { Repeat = RepeatType.Daily };

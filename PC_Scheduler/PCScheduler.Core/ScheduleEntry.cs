@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace PCScheduler.Core;
 
+[JsonConverter(typeof(ScheduleTypeConverter))]
 public enum ScheduleType { Sleep, Hibernate, Wake }
 
 public enum RepeatType { Daily, Weekdays, Weekly, Once }
